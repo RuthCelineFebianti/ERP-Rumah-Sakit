@@ -7,7 +7,7 @@ export const SettingsModule: React.FC = () => {
 
   // Simulated State for Settings
   const [settings, setSettings] = useState({
-    hospitalName: 'Aether Medis Enterprise',
+    hospitalName: 'HospitalSuite Medical Center',
     fiscalYearEnd: '31 Desember',
     currency: 'USD ($)',
     taxRate: '11',
@@ -107,7 +107,7 @@ export const SettingsModule: React.FC = () => {
               </div>
             </div>
             <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 text-xs text-slate-400 text-center">
-              ID Pengguna: AME-ADM-001
+              ID Pengguna: HSE-ADM-001
             </div>
           </div>
 

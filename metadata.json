@@ -1,5 +1,5 @@
 {
-  "name": "Aether Medis Enterprise",
+  "name": "HospitalSuite Enterprise",
   "description": "Sistem ERP Rumah Sakit Terpadu berbasis AI dengan fitur analisis keuangan cerdas, manajemen rantai pasok otomatis, dan asisten medis pintar menggunakan Google Gemini.",
   "requestFramePermissions": [
     "microphone"

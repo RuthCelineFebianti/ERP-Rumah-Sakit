@@ -22,7 +22,7 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({ patients = [] 
         console.error("Failed to parse chat history:", e);
       }
     }
-    return [{ id: 'init', role: 'model', text: 'Halo. Saya Aether, asisten digital Anda. Ada yang bisa saya bantu terkait data pasien atau laporan hari ini?' }];
+    return [{ id: 'init', role: 'model', text: 'Halo. Saya asisten HospitalSuite Enterprise. Ada yang bisa saya bantu terkait data pasien atau operasional hari ini?' }];
   });
 
   const [inputText, setInputText] = useState('');
@@ -105,7 +105,7 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({ patients = [] 
     const initialMsg: ChatMessage = { 
       id: 'init', 
       role: 'model', 
-      text: 'Halo. Saya Aether, asisten digital Anda. Ada yang bisa saya bantu terkait data pasien atau laporan hari ini?' 
+      text: 'Halo. Saya asisten HospitalSuite Enterprise. Ada yang bisa saya bantu terkait data pasien atau operasional hari ini?' 
     };
     
     // Clear storage
@@ -173,7 +173,7 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({ patients = [] 
             <div className="flex items-center gap-2">
               <Bot className="w-5 h-5 text-amber-400" />
               <div>
-                <h3 className="font-semibold text-sm">Asisten Aether</h3>
+                <h3 className="font-semibold text-sm">HospitalSuite AI</h3>
                 <span className="text-xs text-teal-200 flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span> Online
                 </span>
@@ -213,7 +213,7 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({ patients = [] 
               <div className="flex justify-start">
                 <div className="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 flex items-center gap-2">
                   <Loader2 className="w-4 h-4 animate-spin text-teal-600" />
-                  <span className="text-xs text-slate-500">Aether sedang berpikir...</span>
+                  <span className="text-xs text-slate-500">HospitalSuite sedang berpikir...</span>
                 </div>
               </div>
             )}

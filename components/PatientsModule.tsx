@@ -39,8 +39,12 @@ export const PatientsModule: React.FC<PatientsModuleProps> = ({ searchQuery, pat
     assignedDoctor: ''
   });
 
+  // Validation State
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
   // Image processing state to prevent early submission
   const [isProcessingImage, setIsProcessingImage] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // State for collapsible row
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -53,6 +57,15 @@ export const PatientsModule: React.FC<PatientsModuleProps> = ({ searchQuery, pat
       ...prev,
       [name]: name === 'age' ? parseInt(value) || '' : value
     }));
+
+    // Clear error when user types
+    if (errors[name]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -114,47 +127,71 @@ export const PatientsModule: React.FC<PatientsModuleProps> = ({ searchQuery, pat
     }
   };
 
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.name?.trim()) newErrors.name = "Nama lengkap wajib diisi";
+    if (!formData.age || formData.age <= 0) newErrors.age = "Umur tidak valid";
+    if (!formData.condition?.trim()) newErrors.condition = "Kondisi/Diagnosis wajib diisi";
+    if (!formData.assignedDoctor) newErrors.assignedDoctor = "Pilih Dokter Penanggung Jawab";
+    if (!formData.room?.trim()) newErrors.room = "Nomor kamar wajib diisi";
+    if (!formData.admissionDate) newErrors.admissionDate = "Tanggal masuk wajib diisi";
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (isProcessingImage) {
-        return; // Prevent submission while image is processing
+    if (isProcessingImage || isSaving) {
+        return; 
     }
 
-    if (!formData.name || !formData.condition) {
-        alert("Mohon lengkapi Nama dan Kondisi pasien.");
+    if (!validateForm()) {
         return;
     }
 
-    const newPatient: Patient = {
-        id: `PT-${Math.floor(1000 + Math.random() * 9000)}`,
-        name: formData.name,
-        age: formData.age || 0,
-        gender: (formData.gender as 'M' | 'F') || 'M',
-        condition: formData.condition,
-        room: formData.room || 'TBD',
-        admissionDate: formData.admissionDate || new Date().toISOString().split('T')[0],
-        status: (formData.status as any) || 'Stabil',
-        profilePicture: formData.profilePicture,
-        medicalHistory: formData.medicalHistory || '',
-        notes: '',
-        assignedDoctor: formData.assignedDoctor
-    };
+    setIsSaving(true);
 
-    setPatients([newPatient, ...patients]);
-    setIsFormOpen(false);
-    setFormData({
-        name: '',
-        age: undefined,
-        gender: 'M',
-        condition: '',
-        room: '',
-        admissionDate: new Date().toISOString().split('T')[0],
-        status: 'Stabil',
-        profilePicture: '',
-        medicalHistory: '',
-        assignedDoctor: ''
-    });
+    // Simulate small delay for UI feedback
+    setTimeout(() => {
+        const newPatient: Patient = {
+            id: `PT-${Date.now().toString().slice(-6)}`, // More unique ID based on timestamp
+            name: formData.name || 'Pasien',
+            age: formData.age || 0,
+            gender: (formData.gender as 'M' | 'F') || 'M',
+            condition: formData.condition || '-',
+            room: formData.room || 'TBD',
+            admissionDate: formData.admissionDate || new Date().toISOString().split('T')[0],
+            status: (formData.status as any) || 'Stabil',
+            profilePicture: formData.profilePicture,
+            medicalHistory: formData.medicalHistory || '',
+            notes: '',
+            assignedDoctor: formData.assignedDoctor
+        };
+
+        // Use functional update to ensure we have the latest state
+        setPatients(prevPatients => [newPatient, ...prevPatients]);
+        
+        setIsSaving(false);
+        setIsFormOpen(false);
+        
+        // Reset form
+        setFormData({
+            name: '',
+            age: undefined,
+            gender: 'M',
+            condition: '',
+            room: '',
+            admissionDate: new Date().toISOString().split('T')[0],
+            status: 'Stabil',
+            profilePicture: '',
+            medicalHistory: '',
+            assignedDoctor: ''
+        });
+        setErrors({});
+    }, 300);
   };
 
   const toggleExpand = (patient: Patient) => {
@@ -203,7 +240,7 @@ export const PatientsModule: React.FC<PatientsModuleProps> = ({ searchQuery, pat
 
     // 3. Show success feedback
     setSavedSuccessId(patientId);
-    setTimeout(() => setSavedSuccessId(null), 2000);
+    setTimeout(() => setSavedSuccessId(null), 3000); // 3 seconds visibility
   };
 
   const handleStatusChange = (patientId: string, newStatus: string) => {
@@ -259,7 +296,7 @@ export const PatientsModule: React.FC<PatientsModuleProps> = ({ searchQuery, pat
           <p className="text-slate-500 text-sm">Sensus pasien real-time dan pemantauan status klinis.</p>
         </div>
         <button 
-          onClick={() => setIsFormOpen(true)}
+          onClick={() => { setIsFormOpen(true); setErrors({}); }}
           className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg shadow-md transition-all"
         >
             <Plus className="w-4 h-4" /> Registrasi Pasien Baru
@@ -314,28 +351,28 @@ export const PatientsModule: React.FC<PatientsModuleProps> = ({ searchQuery, pat
 
                 <div className="grid grid-cols-2 gap-4">
                     <div className="col-span-2">
-                        <label className="block text-xs font-semibold text-slate-500 mb-1">Nama Lengkap</label>
+                        <label className="block text-xs font-semibold text-slate-500 mb-1">Nama Lengkap <span className="text-rose-500">*</span></label>
                         <input 
-                            required
                             type="text" 
                             name="name" 
                             value={formData.name}
                             onChange={handleInputChange}
-                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
+                            className={`w-full px-3 py-2 bg-slate-50 border rounded-lg text-sm outline-none transition ${errors.name ? 'border-rose-500 focus:border-rose-500 focus:ring-rose-500/20' : 'border-slate-200 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500'}`}
                             placeholder="cth. Budi Santoso"
                         />
+                        {errors.name && <p className="text-xs text-rose-500 mt-1">{errors.name}</p>}
                     </div>
                     <div>
-                        <label className="block text-xs font-semibold text-slate-500 mb-1">Umur</label>
+                        <label className="block text-xs font-semibold text-slate-500 mb-1">Umur <span className="text-rose-500">*</span></label>
                         <input 
-                            required
                             type="number" 
                             name="age" 
                             value={formData.age || ''}
                             onChange={handleInputChange}
-                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
+                            className={`w-full px-3 py-2 bg-slate-50 border rounded-lg text-sm outline-none transition ${errors.age ? 'border-rose-500 focus:border-rose-500 focus:ring-rose-500/20' : 'border-slate-200 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500'}`}
                             placeholder="cth. 34"
                         />
+                        {errors.age && <p className="text-xs text-rose-500 mt-1">{errors.age}</p>}
                     </div>
                     <div>
                         <label className="block text-xs font-semibold text-slate-500 mb-1">Jenis Kelamin</label>
@@ -350,53 +387,54 @@ export const PatientsModule: React.FC<PatientsModuleProps> = ({ searchQuery, pat
                         </select>
                     </div>
                     <div className="col-span-2">
-                        <label className="block text-xs font-semibold text-slate-500 mb-1">Kondisi / Diagnosis Awal</label>
+                        <label className="block text-xs font-semibold text-slate-500 mb-1">Kondisi / Diagnosis Awal <span className="text-rose-500">*</span></label>
                         <input 
-                            required
                             type="text" 
                             name="condition" 
                             value={formData.condition}
                             onChange={handleInputChange}
-                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
+                            className={`w-full px-3 py-2 bg-slate-50 border rounded-lg text-sm outline-none transition ${errors.condition ? 'border-rose-500 focus:border-rose-500 focus:ring-rose-500/20' : 'border-slate-200 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500'}`}
                             placeholder="cth. Bronkitis Akut"
                         />
+                        {errors.condition && <p className="text-xs text-rose-500 mt-1">{errors.condition}</p>}
                     </div>
                     <div>
-                        <label className="block text-xs font-semibold text-slate-500 mb-1">Dokter Penanggung Jawab (DPJP)</label>
+                        <label className="block text-xs font-semibold text-slate-500 mb-1">Dokter Penanggung Jawab (DPJP) <span className="text-rose-500">*</span></label>
                          <select 
                             name="assignedDoctor" 
                             value={formData.assignedDoctor}
                             onChange={handleInputChange}
-                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
+                            className={`w-full px-3 py-2 bg-slate-50 border rounded-lg text-sm outline-none transition ${errors.assignedDoctor ? 'border-rose-500 focus:border-rose-500 focus:ring-rose-500/20' : 'border-slate-200 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500'}`}
                         >
                             <option value="">Pilih Dokter</option>
                             {DOCTORS.map((doc) => (
                                 <option key={doc} value={doc}>{doc}</option>
                             ))}
                         </select>
+                        {errors.assignedDoctor && <p className="text-xs text-rose-500 mt-1">{errors.assignedDoctor}</p>}
                     </div>
                     <div>
-                        <label className="block text-xs font-semibold text-slate-500 mb-1">Kamar Rawat</label>
+                        <label className="block text-xs font-semibold text-slate-500 mb-1">Kamar Rawat <span className="text-rose-500">*</span></label>
                         <input 
-                            required
                             type="text" 
                             name="room" 
                             value={formData.room}
                             onChange={handleInputChange}
-                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
+                            className={`w-full px-3 py-2 bg-slate-50 border rounded-lg text-sm outline-none transition ${errors.room ? 'border-rose-500 focus:border-rose-500 focus:ring-rose-500/20' : 'border-slate-200 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500'}`}
                             placeholder="cth. 101-A"
                         />
+                        {errors.room && <p className="text-xs text-rose-500 mt-1">{errors.room}</p>}
                     </div>
                     <div>
-                        <label className="block text-xs font-semibold text-slate-500 mb-1">Tanggal Masuk</label>
+                        <label className="block text-xs font-semibold text-slate-500 mb-1">Tanggal Masuk <span className="text-rose-500">*</span></label>
                         <input 
-                            required
                             type="date" 
                             name="admissionDate" 
                             value={formData.admissionDate}
                             onChange={handleInputChange}
-                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
+                            className={`w-full px-3 py-2 bg-slate-50 border rounded-lg text-sm outline-none transition ${errors.admissionDate ? 'border-rose-500 focus:border-rose-500 focus:ring-rose-500/20' : 'border-slate-200 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500'}`}
                         />
+                        {errors.admissionDate && <p className="text-xs text-rose-500 mt-1">{errors.admissionDate}</p>}
                     </div>
                     <div>
                         <label className="block text-xs font-semibold text-slate-500 mb-1">Status Saat Ini</label>
@@ -434,11 +472,11 @@ export const PatientsModule: React.FC<PatientsModuleProps> = ({ searchQuery, pat
                     </button>
                     <button 
                         type="submit"
-                        disabled={isProcessingImage}
-                        className={`px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-lg shadow-sm flex items-center gap-2 transition ${isProcessingImage ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        disabled={isProcessingImage || isSaving}
+                        className={`px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-lg shadow-sm flex items-center gap-2 transition ${isProcessingImage || isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
-                        {isProcessingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} 
-                        {isProcessingImage ? 'Memproses...' : 'Simpan Data'}
+                        {isProcessingImage || isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} 
+                        {isProcessingImage ? 'Memproses...' : isSaving ? 'Menyimpan...' : 'Simpan Data'}
                     </button>
                 </div>
             </form>
@@ -637,7 +675,7 @@ export const PatientsModule: React.FC<PatientsModuleProps> = ({ searchQuery, pat
                                         <div className="bg-teal-100 rounded-full p-0.5">
                                             <Check className="w-3 h-3" /> 
                                         </div>
-                                        Berhasil disimpan
+                                        Catatan berhasil disimpan
                                     </span>
                                 )}
                              </div>

@@ -1,6 +1,6 @@
 import { InventoryItem, KPIData, Transaction, Patient } from "./types";
 
-export const APP_NAME = "Aether Medis Enterprise";
+export const APP_NAME = "HospitalSuite Enterprise";
 
 export const MOCK_TRANSACTIONS: Transaction[] = [
   { id: 'TX-001', date: '2023-10-24', description: 'Pengadaan: Masker Bedah', amount: 5000, type: 'DEBIT', category: 'HPP', status: 'POSTED' },

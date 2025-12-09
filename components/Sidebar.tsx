@@ -23,7 +23,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange }) =
           <Activity className="w-5 h-5 text-white" />
         </div>
         <div className="flex flex-col">
-          <span className="font-bold text-slate-800 leading-tight tracking-tight">AME</span>
+          <span className="font-bold text-slate-800 leading-tight tracking-tight">HospitalSuite</span>
           <span className="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">Enterprise</span>
         </div>
       </div>

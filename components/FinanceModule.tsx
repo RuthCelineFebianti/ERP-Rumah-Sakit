@@ -67,7 +67,7 @@ export const FinanceModule: React.FC = () => {
         <div className="bg-gradient-to-r from-slate-800 to-slate-900 text-slate-100 rounded-xl p-6 shadow-xl border border-slate-700 animate-in fade-in slide-in-from-top-4">
           <div className="flex items-center gap-3 mb-4 border-b border-slate-700 pb-3">
             <AlertTriangle className="w-6 h-6 text-amber-400" />
-            <h3 className="text-lg font-semibold text-amber-400">Laporan Audit Anomali AME</h3>
+            <h3 className="text-lg font-semibold text-amber-400">Laporan Audit Anomali HospitalSuite</h3>
           </div>
           <div className="prose prose-invert prose-sm max-w-none">
             <ReactMarkdown>{analysis}</ReactMarkdown>
