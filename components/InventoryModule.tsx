@@ -1,18 +1,37 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MOCK_INVENTORY } from '../constants';
 import { generateInventoryStrategy } from '../services/geminiService';
-import { Package, TrendingUp, AlertCircle, Sparkles, Loader2 } from 'lucide-react';
+import { Package, TrendingUp, AlertCircle, Sparkles, Loader2, Trash2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 export const InventoryModule: React.FC = () => {
   const [strategy, setStrategy] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
 
+  // Load strategy from local storage on mount
+  useEffect(() => {
+    const savedStrategy = localStorage.getItem('ame_inventory_strategy');
+    if (savedStrategy) {
+      setStrategy(savedStrategy);
+    }
+  }, []);
+
   const handleOptimization = async () => {
     setIsGenerating(true);
-    const result = await generateInventoryStrategy(MOCK_INVENTORY);
-    setStrategy(result);
-    setIsGenerating(false);
+    try {
+      const result = await generateInventoryStrategy(MOCK_INVENTORY);
+      setStrategy(result);
+      localStorage.setItem('ame_inventory_strategy', result);
+    } catch (error) {
+      console.error("Strategy generation failed", error);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const clearStrategy = () => {
+    setStrategy(null);
+    localStorage.removeItem('ame_inventory_strategy');
   };
 
   return (
@@ -22,14 +41,25 @@ export const InventoryModule: React.FC = () => {
           <h2 className="text-2xl font-bold text-slate-800">Manajemen Logistik & Farmasi</h2>
           <p className="text-slate-500 text-sm">Otomatisasi pengadaan dan pemantauan stok obat.</p>
         </div>
-        <button
-          onClick={handleOptimization}
-          disabled={isGenerating}
-          className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg shadow-md transition-all disabled:opacity-70"
-        >
-          {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-          Buat Strategi Pengadaan AI
-        </button>
+        <div className="flex gap-2">
+            {strategy && (
+                <button
+                    onClick={clearStrategy}
+                    className="flex items-center gap-2 px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-lg transition-all"
+                    title="Hapus Strategi"
+                >
+                    <Trash2 className="w-4 h-4" />
+                </button>
+            )}
+            <button
+            onClick={handleOptimization}
+            disabled={isGenerating}
+            className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg shadow-md transition-all disabled:opacity-70"
+            >
+            {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+            {strategy ? 'Perbarui Strategi' : 'Buat Strategi Pengadaan AI'}
+            </button>
+        </div>
       </div>
 
       {/* AI Strategy Panel */}

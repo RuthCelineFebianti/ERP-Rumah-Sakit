@@ -28,6 +28,7 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({ patients = [] 
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(false);
   
   // Ref for the chat session
   const chatSessionRef = useRef<Chat | null>(null);
@@ -51,6 +52,7 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({ patients = [] 
   // Initialize Speech Recognition
   useEffect(() => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      setSpeechSupported(true);
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       recognitionRef.current = new SpeechRecognition();
       recognitionRef.current.continuous = false; // Stop after one sentence/phrase
@@ -74,12 +76,14 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({ patients = [] 
       recognitionRef.current.onend = () => {
         setIsListening(false);
       };
+    } else {
+      setSpeechSupported(false);
     }
   }, []);
 
   const toggleListening = () => {
-    if (!recognitionRef.current) {
-      alert("Browser Anda tidak mendukung fitur input suara.");
+    if (!speechSupported || !recognitionRef.current) {
+      alert("Browser Anda tidak mendukung fitur input suara (Web Speech API). Cobalah gunakan Google Chrome.");
       return;
     }
 
@@ -227,13 +231,15 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({ patients = [] 
                 placeholder={isListening ? "Silakan bicara..." : "Tanya tentang SOP atau data..."}
                 className="bg-transparent border-none outline-none text-sm w-full text-slate-700 placeholder:text-slate-400"
               />
-              <button
-                onClick={toggleListening}
-                className={`transition ${isListening ? 'text-red-500 animate-pulse' : 'text-slate-400 hover:text-teal-600'}`}
-                title="Dikte Suara"
-              >
-                 {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-              </button>
+              {speechSupported && (
+                <button
+                    onClick={toggleListening}
+                    className={`transition ${isListening ? 'text-red-500 animate-pulse' : 'text-slate-400 hover:text-teal-600'}`}
+                    title="Dikte Suara"
+                >
+                    {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                </button>
+              )}
               <button 
                 onClick={handleSend}
                 disabled={!inputText.trim() || isTyping}

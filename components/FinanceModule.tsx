@@ -1,18 +1,37 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MOCK_TRANSACTIONS } from '../constants';
 import { analyzeFraud } from '../services/geminiService';
-import { AlertTriangle, CheckCircle, Search, FileText, BrainCircuit, RefreshCw } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Search, FileText, BrainCircuit, RefreshCw, Trash2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 export const FinanceModule: React.FC = () => {
   const [analysis, setAnalysis] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Load analysis from local storage on mount
+  useEffect(() => {
+    const savedAnalysis = localStorage.getItem('ame_finance_analysis');
+    if (savedAnalysis) {
+      setAnalysis(savedAnalysis);
+    }
+  }, []);
+
   const handleAIAnalysis = async () => {
     setIsLoading(true);
-    const result = await analyzeFraud(MOCK_TRANSACTIONS);
-    setAnalysis(result);
-    setIsLoading(false);
+    try {
+      const result = await analyzeFraud(MOCK_TRANSACTIONS);
+      setAnalysis(result);
+      localStorage.setItem('ame_finance_analysis', result);
+    } catch (error) {
+      console.error("Analysis failed", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const clearAnalysis = () => {
+    setAnalysis(null);
+    localStorage.removeItem('ame_finance_analysis');
   };
 
   return (
@@ -22,14 +41,25 @@ export const FinanceModule: React.FC = () => {
           <h2 className="text-2xl font-bold text-slate-800">Buku Besar (General Ledger)</h2>
           <p className="text-slate-500 text-sm">Pencatatan real-time dan audit otomatis berbasis AI.</p>
         </div>
-        <button
-          onClick={handleAIAnalysis}
-          disabled={isLoading}
-          className="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg shadow-md transition-all disabled:opacity-70"
-        >
-          {isLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <BrainCircuit className="w-4 h-4" />}
-          Analisis Indikasi Kecurangan AI
-        </button>
+        <div className="flex gap-2">
+            {analysis && (
+                <button
+                    onClick={clearAnalysis}
+                    className="flex items-center gap-2 px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-lg transition-all"
+                    title="Hapus Hasil Analisis"
+                >
+                    <Trash2 className="w-4 h-4" />
+                </button>
+            )}
+            <button
+            onClick={handleAIAnalysis}
+            disabled={isLoading}
+            className="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg shadow-md transition-all disabled:opacity-70"
+            >
+            {isLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <BrainCircuit className="w-4 h-4" />}
+            {analysis ? 'Analisis Ulang' : 'Analisis Indikasi Kecurangan AI'}
+            </button>
+        </div>
       </div>
 
       {/* AI Analysis Result Panel */}

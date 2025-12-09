@@ -105,47 +105,44 @@ export const PatientsModule: React.FC<PatientsModuleProps> = ({ searchQuery, pat
       setSavedSuccessId(null);
     } else {
       setExpandedId(patient.id);
-      // Check for unsaved draft in localStorage
-      const savedDraft = localStorage.getItem(`${DRAFT_KEY_PREFIX}${patient.id}`);
-      setNoteDraft(savedDraft !== null ? savedDraft : (patient.notes || ''));
+      // Try to load unsaved draft from localStorage first
+      try {
+        const savedDraft = localStorage.getItem(`${DRAFT_KEY_PREFIX}${patient.id}`);
+        // Use draft if exists, otherwise fall back to saved patient notes, or empty string
+        setNoteDraft(savedDraft !== null ? savedDraft : (patient.notes || ''));
+      } catch (e) {
+        setNoteDraft(patient.notes || '');
+      }
       setSavedSuccessId(null);
     }
   };
 
   const handleNoteChange = (e: React.ChangeEvent<HTMLTextAreaElement>, patientId: string) => {
     const newValue = e.target.value;
+    setNoteDraft(newValue);
     
-    // Auto-insert timestamp if the note was empty and user starts typing (not deleting)
-    if (!noteDraft && newValue.length > 0) {
-        const now = new Date().toLocaleString('id-ID', { 
-            month: 'short', 
-            day: 'numeric', 
-            hour: '2-digit', 
-            minute: '2-digit',
-            hour12: false
-        });
-        const timestamp = `[${now}] `;
-        
-        // Prepend timestamp to the newly typed content
-        const valueWithTimestamp = timestamp + newValue;
-        
-        setNoteDraft(valueWithTimestamp);
-        localStorage.setItem(`${DRAFT_KEY_PREFIX}${patientId}`, valueWithTimestamp);
-    } else {
-        setNoteDraft(newValue);
-        localStorage.setItem(`${DRAFT_KEY_PREFIX}${patientId}`, newValue);
+    // Persist draft to localStorage immediately so data isn't lost on refresh/collapse
+    try {
+      localStorage.setItem(`${DRAFT_KEY_PREFIX}${patientId}`, newValue);
+    } catch (err) {
+      console.error("Failed to save draft to localStorage:", err);
     }
   };
 
   const handleSaveNote = (patientId: string) => {
-    // Update main state
+    // 1. Update the main patients state (which triggers App.tsx to save to persisted storage)
     setPatients(prev => prev.map(p => 
       p.id === patientId ? { ...p, notes: noteDraft } : p
     ));
     
-    // Clear draft from localStorage as it's now committed to main state
-    localStorage.removeItem(`${DRAFT_KEY_PREFIX}${patientId}`);
+    // 2. Clear the temporary draft from localStorage as it is now committed
+    try {
+      localStorage.removeItem(`${DRAFT_KEY_PREFIX}${patientId}`);
+    } catch (err) {
+      console.error("Failed to clear draft from localStorage:", err);
+    }
 
+    // 3. Show success feedback
     setSavedSuccessId(patientId);
     setTimeout(() => setSavedSuccessId(null), 2000);
   };
@@ -167,13 +164,17 @@ export const PatientsModule: React.FC<PatientsModuleProps> = ({ searchQuery, pat
     const entry = `[${now}] `;
     
     let newDraft = noteDraft;
+    // Add newline if there is existing text and it doesn't end with one
     if (noteDraft && !noteDraft.endsWith('\n')) {
         newDraft += '\n';
     }
     newDraft += entry;
     
     setNoteDraft(newDraft);
-    localStorage.setItem(`${DRAFT_KEY_PREFIX}${patientId}`, newDraft);
+    // Update draft storage
+    try {
+      localStorage.setItem(`${DRAFT_KEY_PREFIX}${patientId}`, newDraft);
+    } catch (err) { console.error(err); }
   };
 
   const filteredPatients = patients.filter(p => {
