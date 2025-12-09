@@ -16,13 +16,26 @@ export default function App() {
 
   // Lifted Patient State
   const [patients, setPatients] = useState<Patient[]>(() => {
-    const saved = localStorage.getItem('ame_patients');
-    return saved ? JSON.parse(saved) : MOCK_PATIENTS;
+    try {
+      const saved = localStorage.getItem('ame_patients');
+      return saved ? JSON.parse(saved) : MOCK_PATIENTS;
+    } catch (e) {
+      console.error("Gagal memuat data pasien:", e);
+      return MOCK_PATIENTS;
+    }
   });
 
   // Persist patients to LocalStorage whenever the list changes
   useEffect(() => {
-    localStorage.setItem('ame_patients', JSON.stringify(patients));
+    try {
+      localStorage.setItem('ame_patients', JSON.stringify(patients));
+    } catch (error) {
+      console.error("Gagal menyimpan data pasien ke LocalStorage:", error);
+      // Check for QuotaExceededError
+      if (error instanceof DOMException && (error.name === 'QuotaExceededError' || error.name === 'NS_ERROR_DOM_QUOTA_REACHED')) {
+        alert("Peringatan: Penyimpanan browser penuh. Data pasien baru mungkin tidak tersimpan permanen. Cobalah hapus beberapa data atau gunakan foto profil yang lebih kecil.");
+      }
+    }
   }, [patients]);
 
   const renderView = () => {

@@ -55,9 +55,47 @@ export const PatientsModule: React.FC<PatientsModuleProps> = ({ searchQuery, pat
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Basic size check (5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert("Ukuran gambar terlalu besar. Maksimal 5MB.");
+        return;
+      }
+
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData(prev => ({ ...prev, profilePicture: reader.result as string }));
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+            // Compress and Resize Logic
+            const canvas = document.createElement('canvas');
+            const MAX_SIZE = 200; // Resize to thumbnail size (max 200px)
+            let width = img.width;
+            let height = img.height;
+
+            if (width > height) {
+                if (width > MAX_SIZE) {
+                    height *= MAX_SIZE / width;
+                    width = MAX_SIZE;
+                }
+            } else {
+                if (height > MAX_SIZE) {
+                    width *= MAX_SIZE / height;
+                    height = MAX_SIZE;
+                }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+                ctx.drawImage(img, 0, 0, width, height);
+                // Convert to compressed base64 JPEG
+                const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                setFormData(prev => ({ ...prev, profilePicture: compressedDataUrl }));
+            }
+        };
+        if (event.target?.result) {
+            img.src = event.target.result as string;
+        }
       };
       reader.readAsDataURL(file);
     }
@@ -65,7 +103,10 @@ export const PatientsModule: React.FC<PatientsModuleProps> = ({ searchQuery, pat
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.condition) return;
+    if (!formData.name || !formData.condition) {
+        alert("Mohon lengkapi Nama dan Kondisi pasien.");
+        return;
+    }
 
     const newPatient: Patient = {
         id: `PT-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -244,7 +285,7 @@ export const PatientsModule: React.FC<PatientsModuleProps> = ({ searchQuery, pat
                   </div>
                   <div>
                     <p className="text-sm font-medium text-slate-700">Foto Profil</p>
-                    <p className="text-xs text-slate-500">Klik untuk unggah (Maks 5MB)</p>
+                    <p className="text-xs text-slate-500">Otomatis dikompres (Klik untuk unggah)</p>
                   </div>
                 </div>
 
