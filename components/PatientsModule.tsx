@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Patient } from '../types';
-import { Activity, Clock, MapPin, Plus, X, Save, UserPlus, Image as ImageIcon, ChevronDown, ChevronUp, FileText, Check, ClipboardList, Stethoscope, Filter, AlertCircle } from 'lucide-react';
+import { Activity, Clock, MapPin, Plus, X, Save, UserPlus, Image as ImageIcon, ChevronDown, ChevronUp, FileText, Check, ClipboardList, Stethoscope, Filter, AlertCircle, Loader2 } from 'lucide-react';
 
 interface PatientsModuleProps {
   searchQuery: string;
@@ -39,6 +39,9 @@ export const PatientsModule: React.FC<PatientsModuleProps> = ({ searchQuery, pat
     assignedDoctor: ''
   });
 
+  // Image processing state to prevent early submission
+  const [isProcessingImage, setIsProcessingImage] = useState(false);
+
   // State for collapsible row
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState('');
@@ -61,6 +64,7 @@ export const PatientsModule: React.FC<PatientsModuleProps> = ({ searchQuery, pat
         return;
       }
 
+      setIsProcessingImage(true);
       const reader = new FileReader();
       reader.onload = (event) => {
         const img = new Image();
@@ -92,17 +96,31 @@ export const PatientsModule: React.FC<PatientsModuleProps> = ({ searchQuery, pat
                 const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
                 setFormData(prev => ({ ...prev, profilePicture: compressedDataUrl }));
             }
+            setIsProcessingImage(false);
+        };
+        img.onerror = () => {
+            console.error("Error loading image");
+            setIsProcessingImage(false);
         };
         if (event.target?.result) {
             img.src = event.target.result as string;
         }
       };
+      reader.onerror = () => {
+          console.error("Error reading file");
+          setIsProcessingImage(false);
+      }
       reader.readAsDataURL(file);
     }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (isProcessingImage) {
+        return; // Prevent submission while image is processing
+    }
+
     if (!formData.name || !formData.condition) {
         alert("Mohon lengkapi Nama dan Kondisi pasien.");
         return;
@@ -270,8 +288,10 @@ export const PatientsModule: React.FC<PatientsModuleProps> = ({ searchQuery, pat
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
                 {/* Profile Picture Upload */}
                 <div className="flex items-center gap-4 mb-2">
-                  <div className="relative w-20 h-20 rounded-full bg-slate-100 border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden group hover:border-teal-500 transition">
-                    {formData.profilePicture ? (
+                  <div className={`relative w-20 h-20 rounded-full bg-slate-100 border-2 border-dashed ${isProcessingImage ? 'border-amber-400' : 'border-slate-300'} flex items-center justify-center overflow-hidden group hover:border-teal-500 transition`}>
+                    {isProcessingImage ? (
+                        <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
+                    ) : formData.profilePicture ? (
                       <img src={formData.profilePicture} alt="Preview" className="w-full h-full object-cover" />
                     ) : (
                       <ImageIcon className="w-8 h-8 text-slate-300 group-hover:text-teal-500 transition" />
@@ -280,12 +300,15 @@ export const PatientsModule: React.FC<PatientsModuleProps> = ({ searchQuery, pat
                       type="file" 
                       accept="image/*"
                       onChange={handleImageUpload}
-                      className="absolute inset-0 opacity-0 cursor-pointer"
+                      disabled={isProcessingImage}
+                      className="absolute inset-0 opacity-0 cursor-pointer disabled:cursor-not-allowed"
                     />
                   </div>
                   <div>
                     <p className="text-sm font-medium text-slate-700">Foto Profil</p>
-                    <p className="text-xs text-slate-500">Otomatis dikompres (Klik untuk unggah)</p>
+                    <p className="text-xs text-slate-500">
+                        {isProcessingImage ? "Sedang mengompres..." : "Otomatis dikompres (Klik untuk unggah)"}
+                    </p>
                   </div>
                 </div>
 
@@ -411,9 +434,11 @@ export const PatientsModule: React.FC<PatientsModuleProps> = ({ searchQuery, pat
                     </button>
                     <button 
                         type="submit"
-                        className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-lg shadow-sm flex items-center gap-2 transition"
+                        disabled={isProcessingImage}
+                        className={`px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-lg shadow-sm flex items-center gap-2 transition ${isProcessingImage ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
-                        <Save className="w-4 h-4" /> Simpan Data
+                        {isProcessingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} 
+                        {isProcessingImage ? 'Memproses...' : 'Simpan Data'}
                     </button>
                 </div>
             </form>
